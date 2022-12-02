@@ -348,8 +348,8 @@ nfa_epsilons_1(NFA, Es, [S|Ss], Ns) :-
     member(S, Es)
     %% Si S est un état-epsilon qu'on a déjà vu, il n'y a rien de nouveau.
     -> nfa_epsilons_1(NFA, Es, Ss, Ns)
-    ;  (member(S = epsilon(_, Ss1), NFA)
-        %% Un nouvel état-epsilon.
+    ;  (member(S = epsilon([], Ss1), NFA)
+        %% Un nouvel état-epsilon qui ne contient pas de marque.
        -> append(Ss1, Ss, Ss2),
           nfa_epsilons_1(NFA, [S|Es], Ss2, Ns)
        ;  nfa_epsilons_1(NFA, Es, Ss, Ns1),
