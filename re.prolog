@@ -297,19 +297,26 @@ re_comp(RE1 \/ RE2, E, B, [B = epsilon([], [B1, B2]) | NFA]) :-
     re_comp(RE2, E, B2, NFA2),
     append(NFA1, NFA2, NFA).
 
+re_comp(name(Name, RE), E, B, [B = epsilon([beg(Name)], [B1]),
+                                B2 = epsilon([end(Name)], [E])
+                                | NFA]) :-
+    new_state(B),
+    new_state(B2),
+    re_comp(RE, B2, B1, NFA).
+
+
 re_comp(in(Chars), E, B, [B = step(InList)]) :-
     new_state(B),
     re_comp_in(Chars, E, InList).
 
-re_comp(notin(Chars), _, B, [B = step(InList)| ]) :-
+re_comp(notin(Chars), E, B, [B = step(InList)]) :-
     new_state(B),
-    new_state(T),
-    re_comp_in(Chars, T, InList).
+    findall(X, (between(0, 128, X), \+ member(X, Chars)), NotInList),
+    re_comp_in(NotInList, E, InList).
 
-re_comp(Char, E, B, [B = step([(Char -> E) | NFA])]) :- character(Char), new_state(B).
+re_comp(Char, E, B, [B = step([(Char -> E)])]) :- character(Char), new_state(B).
 
     
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Élimination des cycles d'epsilon infinis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -327,7 +334,7 @@ nfa_epsilons(NFAi, NFAo) :- nfa_epsilons(NFAi, NFAi, NFAo).
 %% nfa_epsilons(+NFA, +NFAi, -NFAo)
 %% Boucle interne.
 nfa_epsilons(_, [], []).
-nfa_epsilons(NFA, [S = epsilon(_, Ss) | NFA1], [S = epsilon([], Ns) | NFA2]) :-
+nfa_epsilons(NFA, [S = epsilon(Mark, Ss) | NFA1], [S = epsilon(Mark, Ns) | NFA2]) :-
     !, nfa_epsilons_1(NFA, [S], Ss, Ns),
     nfa_epsilons(NFA, NFA1, NFA2).
 nfa_epsilons(NFA, [S | NFA1], [S | NFA2]) :- nfa_epsilons(NFA, NFA1, NFA2).
