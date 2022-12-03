@@ -217,7 +217,17 @@ nfa_wf([State = Step | Ss], NFA) :-
 %% nommés.
 nfa_match(_, success, [], Str, [], Str).
 %% !!REMPLIR ICI!!
-%nfa_match(NFA, step([(Char -> State) | Steps]), Ms, [Char | Str], Gs, Tail) :-
+nfa_match(NFA, step([(Char -> State) | Steps]), Ms, [Char | Str], Gs, Tail) :-
+    nfa_search_step(NFA, State, Step),
+    append(Char, Tail, Str),
+    nfa_match(NFA, Step, Ms, Str, Gs, Tail).
+
+nfa_match(NFA, step([(_Char -> State) | Steps]), Ms, Str, Gs, Tail) :-
+    nfa_match(NFA, step(Steps), Ms, Str, Gs, Tail).
+
+
+nfa_search_step(NFA, State, Step) :-
+    member(State = Step, NFA)
 
 
 %% nfa_search_in_chars(+NFA, +Str, -Res)
