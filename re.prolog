@@ -227,7 +227,7 @@ nfa_match(NFA, step([(_Char -> State) | Steps]), Ms, Str, Gs, Tail) :-
 
 
 nfa_search_step(NFA, State, Step) :-
-    member(State = Step, NFA)
+    member(State = Step, NFA).
 
 
 %% nfa_search_in_chars(+NFA, +Str, -Res)
@@ -319,10 +319,9 @@ re_comp(in(Chars), E, B, [B = step(InList)]) :-
     new_state(B),
     re_comp_in(Chars, E, InList).
 
-re_comp(notin(Chars), E, B, [B = step(InList)]) :-
-    new_state(B),
-    findall(X, (between(0, 128, X), \+ member(X, Chars)), NotInList),
-    re_comp_in(NotInList, E, InList).
+re_comp(notin(Chars), E, B, [B = step([InList | E])]) :-
+    new_state(B), new_state(F),
+    re_comp_in(Chars, F, InList).
 
 re_comp(Char, E, B, [B = step([(Char -> E)])]) :- character(Char), new_state(B).
 
@@ -344,8 +343,8 @@ nfa_epsilons(NFAi, NFAo) :- nfa_epsilons(NFAi, NFAi, NFAo).
 %% nfa_epsilons(+NFA, +NFAi, -NFAo)
 %% Boucle interne.
 nfa_epsilons(_, [], []).
-nfa_epsilons(NFA, [S = epsilon(Mark, Ss) | NFA1], [S = epsilon(Mark, Ns) | NFA2]) :-
-    !, nfa_epsilons_1(NFA, [S], Ss, Ns),
+nfa_epsilons(NFA, [S = epsilon(Mark1, Ss) | NFA1], [S = epsilon([Marks], Ns) | NFA2]) :-
+    !, nfa_epsilons_1(NFA, [S], Ss, Ns, Mark2), append(Mark1, Mark2, Marks),
     nfa_epsilons(NFA, NFA1, NFA2).
 nfa_epsilons(NFA, [S | NFA1], [S | NFA2]) :- nfa_epsilons(NFA, NFA1, NFA2).
 
@@ -353,16 +352,16 @@ nfa_epsilons(NFA, [S | NFA1], [S | NFA2]) :- nfa_epsilons(NFA, NFA1, NFA2).
 %% Prend un liste d'états `States` et renvoie une liste d'états `NonEpsilons`
 %% equivalente mais où les états-epsilon ne sont plus présents.
 %% `Epsilons` est la liste des états-epsilon déjà vus.
-nfa_epsilons_1(_, _, [], []).
-nfa_epsilons_1(NFA, Es, [S|Ss], Ns) :-
+nfa_epsilons_1(_, _, [], [], []).
+nfa_epsilons_1(NFA, Es, [S|Ss], Ns, Ms) :-
     member(S, Es)
     %% Si S est un état-epsilon qu'on a déjà vu, il n'y a rien de nouveau.
-    -> nfa_epsilons_1(NFA, Es, Ss, Ns)
-    ;  (member(S = epsilon([], Ss1), NFA)
-        %% Un nouvel état-epsilon qui ne contient pas de marque.
-       -> append(Ss1, Ss, Ss2),
-          nfa_epsilons_1(NFA, [S|Es], Ss2, Ns)
-       ;  nfa_epsilons_1(NFA, Es, Ss, Ns1),
+    -> nfa_epsilons_1(NFA, Es, Ss, Ns, Ms)
+    ;  (member(S = epsilon(M, Ss1), NFA)
+        %% Un nouvel état-epsilon.
+       -> append(Ss1, Ss, Ss2), append(M, M2, Ms),
+          nfa_epsilons_1(NFA, [S|Es], Ss2, Ns, M2)
+       ;  nfa_epsilons_1(NFA, Es, Ss, Ns1, Ms),
           (member(S, Ns1)
           -> Ns = Ns1
           ;  Ns = [S|Ns1])).
