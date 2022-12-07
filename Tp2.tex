@@ -1,0 +1,120 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\title{IFT2035 - TP 2}
+\author{David Georgaris (20160503) \and Adel Abdeladim (20127626) }
+\date{12 Décembre 2022}
+
+
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{dsfont}
+\usepackage{adjustbox}
+\usepackage{tabularx}
+\usepackage{seqsplit}
+
+\usepackage[left=20mm, right=20mm, top=20mm, bottom=20mm]{geometry}
+
+\begin{document}
+
+\maketitle
+\section{Code de base}
+    Nous avons commencé par lire et comprendre les différentes étapes 
+    qu'emprunterait le code, de sa lecture à sa sortie en valeur. Les 
+    deux étapes principales sont la compilation de l'expression régulière
+    en NFA suivie du parcour du NFA afin de matcher la chaîne de caractères 
+    donnée en entrée avec l'expression régulière. \\
+
+    
+\section{re\_comp}
+\subsection{À faire}
+
+   Cette fonction sert à compiler une expression régulière sous la forme d'un
+   NFA. Ce qui nous était donné couvrait : le cas de base, la concaténation de 
+   deux expressions régulières ainsi que les règles $'*'$ et $'.'$ . Pour 
+   compléter cette fonction, il faut donc implémenter les règles des expressions 
+   régulières restantes ainsi que le cas où notre expression est un simple caractère.
+    
+ \subsection{Exécution}
+ 
+    Cette fonction était plutôt simple à compléter puisque les cas déjà faits 
+    dans le code source offraient une bonne compréhension du fonctionnement de
+    la fonction. Par exemple, le cas de concaténation d'expressions régulières 
+    montrait bien comment enchaîner plusieurs appels récursifs en utilisant 
+    le noeud intermédiaire. Les cas des règles $'.'$ et $'*'$ montraient bien quand 
+    initialiser un état et comment effectuer un appel récursif dans un ordre 
+    autre que de $B$ à $E$.\\
+    Le cas $'+'$ était plutôt simple à gérer comme on pouvait se baser sur le 
+    cas équivalent de la fonction $match$. Il fallait simplement forcer 
+    l'application de la règle RE une fois de $B$ vers $I$, puis appeler 
+    récursivement $*RE$ de $I$ vers $E$. De cette façon, on s'assure que la règle 
+    soit appliquée au moins une fois. \\
+    Le cas du $'?'$ était aussi très similaire au cas $'*'$ déjà donné. Il 
+    suffisait de déclarer un état intermédiaire $B1$ et permettre de se 
+    déplacer de B à E en passant soit par $B1$ avec l'expression régulière, 
+    soit directement avec une transition epsilon. \\
+    Pour le cas du $'\/'$, on pouvait forement s'inspirer de la concaténation 
+    en introduisant deux états intermédiaires et une transition epsilon de 
+    $B$ vers ces deux états. Ainsi, on s'assure que l'une des deux expressions 
+    régulières sera respectée. \\
+    Les cas $'in'$ et $'notin'$ étaient légèrement plus complexes. Pour y arriver, 
+    nous avons dû créer une nouvelle fonction qui prend la chaîne de 
+    caractères contenue et construit une liste de $steps$ qui se rendent de $B$ 
+    vers l'état donné en utilisant chacun des caractères. Le $'notin'$ était 
+    légèrement plus complexe comme on devait plutôt envoyer vers un état 
+    terminal autre que $E$. Au départ, comme nous avions mal compris que la liste 
+    contenue dans $steps()$ pouvait se terminer par un noeud, ce qui signifiait 
+    que si le caractère n'était pas dans la liste, alors l'étape suivante serait 
+    ce dernier état. Pour résoudre ce problème, nous avions écrit une fonction 
+    auxiliaire peu chic qui prenait l'ensemble des caractères ASKII et qui 
+    enlevait les caractères contenus dans le $'notin'$. Cette liste était ensuite 
+    donnée à un cas $'in'$. Lorsque le professeur a mentionné que l'on pouvait 
+    simplement mettre un noeud à la fin de la liste de $steps()$, cela a donc 
+    beaucoup simplifié notre NFA.\\
+    Finalement, le cas du caractère seul était très simple après avoir 
+    construit tous les autres cas. Il fallait ajouter un $step()$ contenant 
+    une transition de $B$ vers $E$ avec ce caractère.
+    
+ 
+\section{nfa\_epsilons}
+\subsection{À faire}
+
+    La fonction $nfa\_epsilons$ prend un NFA et a pour but d'éliminer les chaînes 
+    de transitions epsilon pour éviter d'avoir des cycles infinis. La fonction 
+    était majoritairement complétée dans le code source. 
+    Il fallait simplement la modifier pour qu'elle accumule toutes les Marks 
+    visitées lors de son parcour et mette cette liste dans l'état $S$ initial.
+
+\subsection{Exécution}
+    Au départ, comme la fonction n'était même pas mentionnée dans la donnée, 
+    nous pensions qu'il n'était pas nécessaire de la compléter. Cependant, 
+    lorsque nous tentions de compiler une expression régulière contenant un 
+    $name(k, RE)$ , les marques n'apparaissaient pas dans le NFA retourné. 
+    Il était donc évident que nous devions compléter cette fonction. \\
+    Les premières tentatives étaient toutes des échecs. Nous avions essayé de 
+    créer une fonction auxiliaire qui extrayait les $Marks$ visitées, modifier 
+    la fonction $nfa_epsilons\_1$ pour qu'elle accumule aussi la liste de $Marks$ 
+    visitées ou même de dupliquer la fonction $nfa_epsilons\_1$ et de modifier 
+    cette nouvelle version. Après beaucoup trop de grattage de tête, nous 
+    avions abandonné et décidé que seuls les noeuds ne contenant pas de 
+    $Marks$ seraient élimminés. Quelques jours plus tard, nous avons réessayé 
+    de corriger cette fonction et, pour une raison que nous ignorons, la 
+    correction a fonctionné du premier coup. 
+    
+    
+    
+\section{eval}
+\subsection{À faire}    
+    Eval est la dernière fonction permettant de correctement évaluer les index et les passés aux différents appels reçus. Ainsi, on se retrouve à donner à eval une liste de variables de contexte qu'on appellera environement et un Dexp, ces deux entrées devront retourner une valeur, soit un Vnum, Vnil, une paire de valeurs Vcons ou une fonction Vfun valeur à valeur.
+    
+\subsection{Logique}
+
+Dref sera traité avec une fonction auxiliaire elookup qui se chargera de trouver une valeur dans l'environnement qu'on lui donne à l'aide de l'indice de de Bruijn fournis.\\
+Dlambda pour sa part fera appel à une valeur anonyme afin d'y passer recursivement un appel eval sur l'argument, ce qui permet de gérer le cas des fonctions anonymes imbriquées.\\
+Pour Dcall, on fait un appel de fonctions Vfun auquel on donne un appel récursif eval de l'environnement et l'argument.\\
+Dadd va utiliser des appels récursifs de paire Vcons afin de faire l'ajout d'un élément dans une liste.\\
+Dfix doit pour sa part utiliser un appel de fonctions auxiliaires appendEnv qui s'occupe d'ajouter tous les éléments d'un let à l'environnement en les évaluant par séquence. on passe ensuite ce nouvelle environnement dans un appel récursif eval avec l'argument original.\\
+Pour évaluer le match, on teste l'expression e pour savoir s'il s'agit d'une paire ou d'une liste vide. Dépendamment de la réponse obtenue, on évalue l'expression associée.
+
+\end {document}
