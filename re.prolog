@@ -219,16 +219,73 @@ nfa_match(_, success, [], Str, [], Str).
 %% !!REMPLIR ICI!!
 nfa_match(NFA, step([(Char -> State) | Steps]), Ms, [Char | Str], Gs, Tail) :-
     nfa_search_step(NFA, State, Step),
-    append(Char, Tail, Str),
-    nfa_match(NFA, Step, Ms, Str, Gs, Tail).
+    nfa_active_groups(Ms, MsActive),
+    nfa_combine_groups(Char, MsActive, GsRec, Gs),
+    nfa_match(NFA, Step, Ms, Str, GsRec, Tail).
 
-nfa_match(NFA, step([(_Char -> State) | Steps]), Ms, Str, Gs, Tail) :-
+nfa_match(NFA, step([(_Char -> _State) | Steps]), Ms, Str, Gs, Tail) :-
     nfa_match(NFA, step(Steps), Ms, Str, Gs, Tail).
 
+nfa_match(NFA, step([State]), Ms, [Char | Str], Gs, Tail) :-
+    nfa_search_step(NFA, State, Step),
+    nfa_active_groups(Ms, MsActive),
+    nfa_combine_groups(Char, MsActive, GsRec, Gs),
+    nfa_match(NFA, Step, MsActive, Str, GsRec, Tail).
+
+nfa_match(NFA, step(State), Ms, [Char | Str], Gs, Tail) :-
+    nfa_search_step(NFA, State, Step),
+    nfa_active_groups(Ms, MsActive),
+    nfa_combine_groups(Char, MsActive, GsRec, Gs),
+    nfa_match(NFA, Step, MsActive, Str, GsRec, Tail).
+
+
+nfa_match(NFA, epsilon(Marks, [State | States]), Ms, Str, Gs, Tail) :-
+    nfa_marks(Ms, Marks, Mout),
+    nfa_search_step(NFA, State, Step),
+    nfa_match(NFA, Step, Mout, Str, Gs, Tail).
+
+nfa_match(NFA, epsilon(_Marks, [_State | States]), Ms, Str, Gs, Tail) :-
+    nfa_match(NFA, epsilon([], States), Ms, Str, Gs, Tail).
 
 nfa_search_step(NFA, State, Step) :-
     member(State = Step, NFA).
 
+nfa_marks(Ms, [], Ms).
+nfa_marks(Ms, [Mark | Marks], Mout) :-
+    member(Mark, Ms),
+    nfa_marks(Ms, Marks, Mout).
+nfa_marks(Ms, [Mark | Marks], Mout) :-
+    nfa_marks([Mark | Ms], Marks, Mout).
+
+nfa_active_groups([], []).
+nfa_active_groups([beg(C) | Ms], Mout) :-
+    member(end(C), Ms), !,
+    nfa_active_groups(Ms, Mout).
+nfa_active_groups([beg(C) | Ms], Mout) :-
+    nfa_active_groups(Ms, Mout1),
+    append([C], Mout1, Mout).
+nfa_active_groups([Mark | Ms], Mout) :-
+    nfa_active_groups(Ms, Mout).
+
+%% Gs = [a ="c"]
+% G = [a = Char]
+% GRec = [a = NextChar, b = sdfsdf] => [a = Char + NextChar | b = adfasdf]
+
+nfa_combine_groups(_Char, [], Gs, Gs).
+nfa_combine_groups(Char, [M | Marks], GsRec, GsOut) :-
+    member((M = String), GsRec), !,
+    delete(GsRec, (M = String), GsRec1),
+    append([Char], String, Chars),
+    nfa_combine_groups(Char, Marks, [(M = Chars) | GsRec1], GsOut).
+
+nfa_combine_groups(Char, [M | Marks], GsRec, GsOut) :-
+    nfa_combine_groups(Char, Marks, [(M = [Char]) | GsRec], GsOut).
+
+
+%% NFA = [c = step([108 -> v, 109 -> y, c]), v = epsilon([beg(a), beg(b), end(c)],[d, k]), k = success]
+
+%%                    beg(a)       end(a)
+%% NFA = a -> b -> c -> | d -> e -> | f -> c
 
 %% nfa_search_in_chars(+NFA, +Str, -Res)
 %% Boucle de recherche, qui essaie de trouver des sous-chaînes acceptées par
@@ -343,10 +400,11 @@ nfa_epsilons(NFAi, NFAo) :- nfa_epsilons(NFAi, NFAi, NFAo).
 %% nfa_epsilons(+NFA, +NFAi, -NFAo)
 %% Boucle interne.
 nfa_epsilons(_, [], []).
-nfa_epsilons(NFA, [S = epsilon(Mark1, Ss) | NFA1], [S = epsilon([Marks], Ns) | NFA2]) :-
-    !, nfa_epsilons_1(NFA, [S], Ss, Ns, Mark2), append(Mark1, Mark2, Marks),
+nfa_epsilons(NFA, [S = epsilon(Mark, Ss) | NFA1], [S = epsilon(Mark, Ns) | NFA2]) :-
+    !, nfa_epsilons_1(NFA, [S], Ss, Ns, Mark2),
     nfa_epsilons(NFA, NFA1, NFA2).
 nfa_epsilons(NFA, [S | NFA1], [S | NFA2]) :- nfa_epsilons(NFA, NFA1, NFA2).
+
 
 %% nfa_epsilons_1(+NFA, +Epsilons, +States, -NonEpsilons)
 %% Prend un liste d'états `States` et renvoie une liste d'états `NonEpsilons`
@@ -357,14 +415,16 @@ nfa_epsilons_1(NFA, Es, [S|Ss], Ns, Ms) :-
     member(S, Es)
     %% Si S est un état-epsilon qu'on a déjà vu, il n'y a rien de nouveau.
     -> nfa_epsilons_1(NFA, Es, Ss, Ns, Ms)
-    ;  (member(S = epsilon(M, Ss1), NFA)
+    ;  (member(S = epsilon([], Ss1), NFA)
         %% Un nouvel état-epsilon.
-       -> append(Ss1, Ss, Ss2), append(M, M2, Ms),
+       -> append(Ss1, Ss, Ss2),
           nfa_epsilons_1(NFA, [S|Es], Ss2, Ns, M2)
        ;  nfa_epsilons_1(NFA, Es, Ss, Ns1, Ms),
           (member(S, Ns1)
           -> Ns = Ns1
           ;  Ns = [S|Ns1])).
+
+
 
 %% re_compile(+RE, -NFA)
 %% Point d'entrée pour compiler une expression régulière en une NFA.
