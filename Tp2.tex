@@ -100,7 +100,11 @@
     avions abandonné et décidé que seuls les noeuds ne contenant pas de 
     $Marks$ seraient élimminés. Quelques jours plus tard, nous avons réessayé 
     de corriger cette fonction et, pour une raison que nous ignorons, la 
-    correction a fonctionné du premier coup. 
+    correction a fonctionné du premier coup. \\
+    Finalement, comme certains états epsilon contenaient à la fois un $beg(M)$
+    et un $end(M)$, nous avons décidé de revenir à notre idée de départ, soit 
+    de ne pas simplifier les noeuds epsilon contenant des marks. Cela a beaucoup
+    simplifié le traitement de nfa_match.
     
     
     
