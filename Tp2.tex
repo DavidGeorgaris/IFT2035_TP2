@@ -23,10 +23,23 @@
     Nous avons commencé par lire et comprendre les différentes étapes 
     qu'emprunterait le code, de sa lecture à sa sortie en valeur. Les 
     deux étapes principales sont la compilation de l'expression régulière
-    en NFA suivie du parcour du NFA afin de matcher la chaîne de caractères 
+    en NFA suivie du parcours du NFA afin de matcher la chaîne de caractères 
     donnée en entrée avec l'expression régulière. \\
 
-    
+
+\section{nfa\_match}
+    \subsection{À faire}
+        La fonction $nfa\_match$ va prendre un NFA et va suivre les valeurs d'entrées de Str, les Steps, jusqu'à atteindre un état terminal, les chars restants de la Str seront retournés dans Tail, Marks selon les marques qui ont été passés et Gs (Groups), les sous-groupes associés.  
+
+    \subsection{Exécution}
+        Dans le cas où le $char$ requis par l'état pour changer ne match pas avec la lecture faite du $char$ dans le $String$, on passe simplement au prochain. \\
+        Dans le cas contraire, celui d'un match, on fait l'appel à $nfa\_search\_step$ qui va chercher le $Step$ associé à l'état dans le NFA. Une fois ce $Step$ retourné, on fait un appel récursif à $nfa\_match$ avec $Step$ en entrée cette fois-ci. \\
+        Une fois la fin de l'appel consécutif récursif, on fait un appel à $nfa\_combine\_groups$, cette fonction auxiliaire se charge de rajouter le $Char$ aux groupes obtenus récursivement. Cette fonction est appliquée différemment selon si on est dans une fonction de type epsilon qui accepte les $chars$ vides ou pas. Dans le cas ou la chaine n'est pas vide, on l'ajoute à la chaîne contenue dans $GroupsRec$. Après l'avoir ajouté, on la supprime ensuite de Grec pour éviter de doubler la chaine, lors de l'ajout final au retour des appels récursifs, puis on retourne $Gout$ comme étant la chaine des groupes finaux.\\
+        On va aussi prendre en compte les situations où on lit un état en fin de liste ou un état comme $Step$ seul; dans ces deux cas, on fait les étapes de bases simplement, à savoir que l'on va chercher le $step$ avant de rappeler la récursion.\\
+        Les cas les moins instinctifs, à savoir les cas de lecture d'$Epsilon$, sont gérés dans l'appel de $nfa\_marks$, avant de passer aux appels de base, à savoir le $Search$ suivi de la récursion\\
+        La fonction $nfa\_marks$ se charge donc de prendre les $OldMarks$ déjà vues et modifie la liste en fonction des $NewMarks$ rencontrés et si le $Mark$ est un $end(C)$, on retire le $beg(C)$ de la liste et le $Mark$ C n'est donc plus actif.
+
+
 \section{re\_comp}
 \subsection{À faire}
 
@@ -100,11 +113,7 @@
     avions abandonné et décidé que seuls les noeuds ne contenant pas de 
     $Marks$ seraient élimminés. Quelques jours plus tard, nous avons réessayé 
     de corriger cette fonction et, pour une raison que nous ignorons, la 
-    correction a fonctionné du premier coup. \\
-    Finalement, comme certains états epsilon contenaient à la fois un $beg(M)$
-    et un $end(M)$, nous avons décidé de revenir à notre idée de départ, soit 
-    de ne pas simplifier les noeuds epsilon contenant des marks. Cela a beaucoup
-    simplifié le traitement de nfa_match.
+    correction a fonctionné du premier coup. 
     
     
     
