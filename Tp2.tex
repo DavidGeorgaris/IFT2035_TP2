@@ -29,15 +29,41 @@
 
 \section{nfa\_match}
     \subsection{À faire}
-        La fonction $nfa\_match$ va prendre un NFA et va suivre les valeurs d'entrées de Str, les Steps, jusqu'à atteindre un état terminal, les chars restants de la Str seront retournés dans Tail, Marks selon les marques qui ont été passés et Gs (Groups), les sous-groupes associés.  
+        La fonction $nfa\_match$ va prendre un NFA et va suivre les valeurs d'entrées de Str, 
+        les Steps, jusqu'à atteindre un état terminal, les chars restants de la Str seront retournés 
+        dans Tail, Marks selon les marques qui ont été passés et Gs (Groups), les sous-groupes associés.  
 
     \subsection{Exécution}
-        Dans le cas où le $char$ requis par l'état pour changer ne match pas avec la lecture faite du $char$ dans le $String$, on passe simplement au prochain. \\
-        Dans le cas contraire, celui d'un match, on fait l'appel à $nfa\_search\_step$ qui va chercher le $Step$ associé à l'état dans le NFA. Une fois ce $Step$ retourné, on fait un appel récursif à $nfa\_match$ avec $Step$ en entrée cette fois-ci. \\
-        Une fois la fin de l'appel consécutif récursif, on fait un appel à $nfa\_combine\_groups$, cette fonction auxiliaire se charge de rajouter le $Char$ aux groupes obtenus récursivement. Cette fonction est appliquée différemment selon si on est dans une fonction de type epsilon qui accepte les $chars$ vides ou pas. Dans le cas ou la chaine n'est pas vide, on l'ajoute à la chaîne contenue dans $GroupsRec$. Après l'avoir ajouté, on la supprime ensuite de Grec pour éviter de doubler la chaine, lors de l'ajout final au retour des appels récursifs, puis on retourne $Gout$ comme étant la chaine des groupes finaux.\\
-        On va aussi prendre en compte les situations où on lit un état en fin de liste ou un état comme $Step$ seul; dans ces deux cas, on fait les étapes de bases simplement, à savoir que l'on va chercher le $step$ avant de rappeler la récursion.\\
-        Les cas les moins instinctifs, à savoir les cas de lecture d'$Epsilon$, sont gérés dans l'appel de $nfa\_marks$, avant de passer aux appels de base, à savoir le $Search$ suivi de la récursion\\
-        La fonction $nfa\_marks$ se charge donc de prendre les $OldMarks$ déjà vues et modifie la liste en fonction des $NewMarks$ rencontrés et si le $Mark$ est un $end(C)$, on retire le $beg(C)$ de la liste et le $Mark$ C n'est donc plus actif.
+        
+        Dans le cas d'un match, on fait l'appel à $nfa\_search\_step$ qui va chercher le 
+        $Step$ associé à l'état dans le NFA. Une fois ce $Step$ retourné, on fait un appel récursif à 
+        $nfa\_match$ avec le nouveau $Step$ en entrée. \\
+        Une fois la fin de l'appel consécutif récursif, on fait un appel à $nfa\_combine\_groups$, cette 
+        fonction auxiliaire se charge de rajouter le $Char$ aux groupes obtenus récursivement. Si 
+        cette fonction est appelée à partir d'un état Epsilon, on ajoute la chaine vide à tous les groupes
+        afin de s'assurer que l'on puisse print une chaîne vide lorsque $nfa\_match$ se termine sans avoir 
+        accepté un seul caractère. Dans le cas où la chaine n'est pas vide, on l'ajoute à la chaîne contenue dans $GroupsRec$. 
+        Après l'avoir ajoutée, on la supprime ensuite de $GroupsRec$ pour éviter de doubler la chaine, lors de l'ajout final 
+        au retour des appels récursifs, puis on retourne $GOut$ comme étant la chaine des groupes finaux.\\
+        Dans le cas où le $char$ requis par l'état pour changer ne match pas avec la lecture faite 
+        du $char$ dans le $String$, on passe simplement au prochain caractère. \\
+        On va aussi prendre en compte les situations où on lit un état en fin de liste ou un état comme $Step$ 
+        seul; dans ces deux cas, on fait les étapes de bases simplement, à savoir que l'on va chercher le $step$ 
+        avant de rappeler la récursion.\\
+        Les cas les moins instinctifs, à savoir les cas de lecture d'$Epsilon$, sont gérés dans l'appel de $nfa\_marks$, 
+        avant de passer aux appels de base, à savoir le $Search$ suivi de la récursion\\
+        La fonction $nfa\_marks$ se charge donc de prendre les $OldMarks$ déjà vues et modifie la liste en fonction des 
+        $NewMarks$ rencontrés et si le $Mark$ est un $end(C)$, on retire le $beg(C)$ de la liste et le $Mark$ C n'est 
+        donc plus actif.\\
+        Les problèmes rencontrés au cours de la rédaction de cette fonction sont surtout reliés aux deux différentes façons
+        d'effectuer de la récursion. Le premier, celui de la gestion de $Tail$, ressemblait plus à un appel séquentiel : 
+        on devait simplement appeler la fonction en lui donnant le reste de $Str$ et le cas de base contient le résultat renvoyé.
+        Inversement, pour gérer les $Groups$, le cas de base dictait que la liste devait être vide 
+        lors du dernier appel de $nfa\_match$. On devait ainsi écrire une nouvelle fonction qui calculait récursivement les $Groups$
+        de façon à ce qu'on construise le résultat de la fonction à partir de la liste vide du cas récursif.\\
+        Un problème amusant qui nous est aussi arrivé est un appel récursif sans fin qui causait un $Stack Overflow$. 
+        La solution était simplement d'inverser deux appels de fonctions afin de s'assurer que celle qui bouclait indéfiniment
+        ait tous ses arguments et puisse arriver au cas de base.
 
 
 \section{re\_comp}
@@ -114,20 +140,5 @@
     $Marks$ seraient élimminés. Quelques jours plus tard, nous avons réessayé 
     de corriger cette fonction et, pour une raison que nous ignorons, la 
     correction a fonctionné du premier coup. 
-    
-    
-    
-\section{eval}
-\subsection{À faire}    
-    Eval est la dernière fonction permettant de correctement évaluer les index et les passés aux différents appels reçus. Ainsi, on se retrouve à donner à eval une liste de variables de contexte qu'on appellera environement et un Dexp, ces deux entrées devront retourner une valeur, soit un Vnum, Vnil, une paire de valeurs Vcons ou une fonction Vfun valeur à valeur.
-    
-\subsection{Logique}
-
-Dref sera traité avec une fonction auxiliaire elookup qui se chargera de trouver une valeur dans l'environnement qu'on lui donne à l'aide de l'indice de de Bruijn fournis.\\
-Dlambda pour sa part fera appel à une valeur anonyme afin d'y passer recursivement un appel eval sur l'argument, ce qui permet de gérer le cas des fonctions anonymes imbriquées.\\
-Pour Dcall, on fait un appel de fonctions Vfun auquel on donne un appel récursif eval de l'environnement et l'argument.\\
-Dadd va utiliser des appels récursifs de paire Vcons afin de faire l'ajout d'un élément dans une liste.\\
-Dfix doit pour sa part utiliser un appel de fonctions auxiliaires appendEnv qui s'occupe d'ajouter tous les éléments d'un let à l'environnement en les évaluant par séquence. on passe ensuite ce nouvelle environnement dans un appel récursif eval avec l'argument original.\\
-Pour évaluer le match, on teste l'expression e pour savoir s'il s'agit d'une paire ou d'une liste vide. Dépendamment de la réponse obtenue, on évalue l'expression associée.
 
 \end {document}
